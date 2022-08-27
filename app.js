@@ -255,10 +255,18 @@ function isValidInversle(guess) {
     const colours = getColours(guess);
 
     for (var i = 0; i < NUM_LETTERS; i++) {
-        // do we use all the known letters
+        // do we use all the known letters in the right spots
         if (inversleInProgress.knowledgeState.letters[i].is != null) {
             if (guess[i] != inversleInProgress.knowledgeState.letters[i].is) {
                 //console.log("not using a known letter: " + inversleInProgress.knowledgeState.letters[i].is);
+                return false;
+            }
+        }
+
+        // do we use all the letters we know it contains?
+        for (const letter of inversleInProgress.knowledgeState.contains.values()) {
+            if (guess.indexOf(letter) == -1) {
+                //console.log("unot using a letter you should: " + letter);
                 return false;
             }
         }
@@ -327,18 +335,17 @@ function generateInversle() {
     var wordleStep = new Wordle();
     wordleStep = structuredClone(wordleInProgress.last); // start by assuming we hide the second-to-last
 
-    console.log("inversle: " + wordleStep.guess);
-
     var numSolutions = 0;
     do {
         wordleStep = wordleStep.prev;
+        console.log("inversle: " + wordleStep.guess);
 
         // inversle knowledge state based on prev wordle guesses
+        inversleInProgress.colours = structuredClone(wordleStep.colours);
+        inversleInProgress.knowledgeState.contains = structuredClone(wordleStep.prev.knowledgeState.contains);
         for (var i = 0; i < NUM_LETTERS; i++) {
-            inversleInProgress.colours = structuredClone(wordleStep.colours);
             inversleInProgress.knowledgeState.letters[i].is = structuredClone(wordleStep.knowledgeState.letters[i].is);
             inversleInProgress.knowledgeState.letters[i].isNot = structuredClone(wordleStep.prev.knowledgeState.letters[i].isNot);
-            inversleInProgress.knowledgeState.contains = structuredClone(wordleStep.prev.knowledgeState.contains);
         }
 
         // for all the next guesses, we know each letter of the inversle is not something that is incorrect in a future guess
