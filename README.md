@@ -1,1 +1,2 @@
-# maia-hw.github.io
+# Inversle
+A Wordle knockoff.

@@ -105,11 +105,13 @@ class Wordle {
 // All the properties of the Inversle
 class Inversle {
     constructor() {
-        this.allSolutions = new Set();
+        this.commonSolutions = new Set();
+        this.rareSolutions = new Set();
         this.userFoundSolutions = new Set(); // use cookies for this in future to save user data even on reload?
+        this.numCommonFound = 0;
+        this.numRareFound = 0;
         this.knowledgeState = new KnowledgeState();
         this.colours = ["incorrect", "incorrect", "incorrect", "incorrect", "incorrect"];
-        this.numSolutions = 0;
     }
 }
 
@@ -280,18 +282,17 @@ function isValidInversle(guess) {
     return true;
 }
 
-// find all possible solutions to this Inversle, based on the current inversleInProgress knowledge state
+// find all possible solutions to this Inversle, based on the current inversleInProgress knowledge state. Returns the total number of solutions found
 function getAllInverlses() {
-    inversleInProgress.allSolutions.clear();
-    inversleInProgress.numSolutions = 0;
+    inversleInProgress.commonSolutions.clear();
+    inversleInProgress.rareSolutions.clear();
 
     var idx = 0;
     while (idx < valid_solutions.length) {
         let guess = valid_solutions[idx];
 
         if (isValidInversle(guess)) {
-            inversleInProgress.numSolutions++;
-            inversleInProgress.allSolutions.add(guess);
+            inversleInProgress.commonSolutions.add(guess);
         }
 
         idx++
@@ -302,17 +303,23 @@ function getAllInverlses() {
         let guess = valid_guesses[idx];
 
         if (isValidInversle(guess)) {
-            inversleInProgress.numSolutions++;
-            inversleInProgress.allSolutions.add(guess);
+            inversleInProgress.rareSolutions.add(guess);
         }
 
         idx++
     }
 
-    console.log("Correct answers: ")
-    for (var word of inversleInProgress.allSolutions.values()) {
+    // debug
+    console.log("Correct answers: (common)")
+    for (var word of inversleInProgress.commonSolutions.values()) {
         console.log(word);
     }
+    console.log("Correct answers: (rare)")
+    for (var word of inversleInProgress.rareSolutions.values()) {
+        console.log(word);
+    }
+
+    return inversleInProgress.commonSolutions.size + inversleInProgress.rareSolutions.size;
 }
 
 // generate the inversle
@@ -322,6 +329,7 @@ function generateInversle() {
 
     console.log("inversle: " + wordleStep.guess);
 
+    var numSolutions = 0;
     do {
         wordleStep = wordleStep.prev;
 
@@ -341,22 +349,32 @@ function generateInversle() {
             futureWordle = futureWordle.next;
             // console.log("future wordle: " + futureWordle.guess);
             for (var i = 0; i < NUM_LETTERS; i++) {
-                if (futureWordle.colours[i] != "correct") {
-                    // console.log("inversle can't be " + futureWordle.guess[i]);
+                if (futureWordle.colours[i] == "incorrect") {
+                    // can't be anywhere in the word
+                    for (var n = 0; n < NUM_LETTERS; n++) {
+                        inversleInProgress.knowledgeState.letters[n].isNot.add(futureWordle.guess[i]);
+                    }
+                }
+                else if (futureWordle.colours[i] == "wrong-spot") {
+                    // cant be in this spot
                     inversleInProgress.knowledgeState.letters[i].isNot.add(futureWordle.guess[i]);
                 }
             }
         }
 
-        getAllInverlses();
-
-    } while (inversleInProgress.numSolutions < MIN_INVERSLES && wordleStep.prev != null);
+        numSolutions = getAllInverlses();
+    } while (numSolutions < MIN_INVERSLES && wordleStep.prev != null);
 
     // start filling out the stats box
-    var statsBox = document.getElementById("statsPopup");
+    var statsBox = document.getElementById("common");
     var paragraph = document.createElement("h2");
-    paragraph.id = "heading";
-    paragraph.innerHTML = "Inversles found: 0/" + inversleInProgress.numSolutions;
+    paragraph.id = "common-heading";
+    paragraph.innerHTML = "Common solutions found: 0/" + inversleInProgress.commonSolutions.size;
+    statsBox.append(paragraph);
+    statsBox = document.getElementById("rare");
+    paragraph = document.createElement("h2");
+    paragraph.id = "rare-heading";
+    paragraph.innerHTML = "Rare solutions found: 0/" + inversleInProgress.rareSolutions.size;
     statsBox.append(paragraph);
 }
 
@@ -364,6 +382,7 @@ function generateInversle() {
 function validateUserGuess(guess) {
     let guessAsString = guess[0].concat(guess[1], guess[2], guess[3], guess[4]);
     console.log("user guess is: " + guessAsString + "!");
+    const statsBox = document.getElementById("statsPopup");
 
     // make sure it's a word
     if (!isValidGuess(guessAsString)) {
@@ -371,22 +390,28 @@ function validateUserGuess(guess) {
         return false;
     }
 
-    // console.log("correct answer is: " + Array.from(solution.guesses)[solution.guesses.size - 2]);
-
-    //if (inversleInProgress.allSolutions.has(guessAsString)){
     if (isValidInversle(guessAsString)) {
-        const statsBox = document.getElementById("statsPopup");
-
         // if we haven't already found this one, add it to the list
         if (!inversleInProgress.userFoundSolutions.has(guessAsString)) {
             inversleInProgress.userFoundSolutions.add(guessAsString);
 
-            var paragraph = document.createElement("p");
-            paragraph.innerHTML = guessAsString;
-            statsBox.append(paragraph);
+            // figure out if it's a common or rare solution, and add to the appropriate wordlist
+            var wordlist;
+            if(inversleInProgress.commonSolutions.has(guessAsString)){
+                inversleInProgress.numCommonFound++;
+                var title = document.getElementById("common-heading");
+                title.textContent = "Common solutions found: " + inversleInProgress.numCommonFound + "/" + inversleInProgress.commonSolutions.size;
+                wordlist = document.getElementById("common");
+            } else {
+                inversleInProgress.numRareFound++;
+                var title = document.getElementById("rare-heading");
+                title.textContent = "Rare solutions found: " + inversleInProgress.numRareFound + "/" + inversleInProgress.rareSolutions.size;
+                wordlist = document.getElementById("rare"); 
+            }
 
-            var title = document.getElementById("heading");
-            title.textContent = "Inversles found: " + inversleInProgress.userFoundSolutions.size + "/" + inversleInProgress.numSolutions;
+            var paragraph = document.createElement("p");
+                paragraph.innerHTML = guessAsString;
+                wordlist.append(paragraph);
         }
 
         statsBox.style.display = "block";
@@ -618,8 +643,8 @@ window.onload = function () {
     // display all the words!
     var currGuess = wordleInProgress.first;
     while (currGuess != null) {
-        // hide the one that is the inversle
-        if (inversleInProgress.allSolutions.has(currGuess.guess)) {
+        // hide the one that is the inversle. will be a 'common' word
+        if (inversleInProgress.commonSolutions.has(currGuess.guess)) {
             addInputs(currGuess.guess);
         } else {
             addRow(currGuess.guess);

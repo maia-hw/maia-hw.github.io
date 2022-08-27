@@ -33,8 +33,9 @@ footer {
     bottom: 0;
     width: 100%;
     white-space: nowrap;
-    line-height: 2vh;  
-    border-top: 1px solid var(--borderColor);; 
+    line-height: 1vh;  
+    border-top: 1px solid var(--borderColor);
+    font-size: 0.7em;
 }
 
 h1 {
@@ -97,12 +98,11 @@ h1 {
 .popup {
     display: none;
     position: fixed;
-    left: 50%;
-    top: 10vh;
-    height: 70vh;
-    min-width: 40vh;
-    max-width: 95vh;
-    transform: translate(-50%, 5%);
+    left: calc(50% - 0.5*min(250px, 96vw));
+    top: 8vh;
+    width: 96vw;
+    max-width: 250px;
+    min-height: 288px;
     border: 3px outset var(--borderColor);
     background-color: var(--bg);
     padding: 5px;
