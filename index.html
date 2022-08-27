@@ -1,1 +1,47 @@
-Hello World
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Inversle</title>
+        <link rel="stylesheet" href="main.css">
+    </head>
+
+    <header>
+        <!-- Title, stats, and settings -->
+        <div class="btn-spacer">
+            <button class="btn" id="darkmode" style="background-image: url('icons/moon.jpg');" onClick="toggleDarkLight()">Dark</button>
+        </div>
+        <div class="btn-spacer">
+        </div>
+        <h1>Inversle</h1>
+        <div class="btn-spacer">
+            <button class="btn" id="stats" style="background-image: url('icons/stats-light.jpg');" onClick="toggleStatsMenu()">Stats</button>
+        </div>
+        <div class="btn-spacer">
+            <button class="btn" id="help" style="background-image: url('icons/help-light.jpg');" onClick="toggleHelpMenu()">Help</button>
+        </div>
+    </header>
+
+    <body class="light-theme">
+        <!-- popups are hidden untill clicked, but still there -->
+        <div class="popup" id = "statsPopup">
+            STATISTICS
+            <button onClick="toggleStatsMenu()">X</button>
+        </div>
+        <div class="popup" id = "helpPopup">
+            INFORMATION
+            <button onClick="toggleHelpMenu()">X</button>
+            <p>Guess the missing word in the wordle solution!</p>
+        </div>
+        <!-- game board always shows up -->
+        <div class="game-board" id="game-board"></div>
+        <script src="app.js"></script>
+        <noscript>You need to enable JavaScript to view the full site.</noscript>
+    </body>
+
+    <footer>
+        <p> Game by Maia Henriksson-Ward </p>
+    </footer>
+</html>
