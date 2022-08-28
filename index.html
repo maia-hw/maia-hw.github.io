@@ -6,10 +6,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Inversle</title>
         <link rel="stylesheet" href="main.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
     </head>
 
     <header>
-        <!-- Title, stats, and settings -->
+        <!-- Title and buttons: stats, settings, and darkmode -->
         <div class="btn-spacer">
             <button class="btn" id="darkmode" style="background-image: url('icons/moon.jpg');" onClick="toggleDarkLight()">Dark</button>
         </div>
@@ -47,8 +48,15 @@
         </div>
         <!-- game board always shows up -->
         <div class="game-board" id="game-board"></div>
+        <!-- toastr and jQuery needed for toastr-->
+        <script
+            src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        <!-- inversle script -->
         <script src="app.js"></script>
-        <noscript>You need to enable JavaScript to view the full site.</noscript>
+        <noscript>Please enable JavaScript to view the full site.</noscript>
     </body>
 
     <footer>

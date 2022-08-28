@@ -1,2 +1,2 @@
 # Inversle
-A Wordle knockoff.
+A Wordle knockoff. Play at [https://maia-hw.github.io/](https://maia-hw.github.io/)

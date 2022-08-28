@@ -124,6 +124,9 @@ class Inversle {
 const wordleInProgress = new Wordle(todaysWordle());
 const inversleInProgress = new Inversle();
 
+toastr.options.closeButton = true;
+toastr.options.timeOut = 1500;
+
 /* ***********************************************
  *                                               *
  *                Wordle Logic                   *
@@ -387,7 +390,7 @@ function generateInversle() {
 function validateUserGuess() {
     // get the user's guess
     var guessAsString = "";
-    for(var i = 0; i < NUM_LETTERS; i++){
+    for (var i = 0; i < NUM_LETTERS; i++) {
         guessAsString = guessAsString.concat(document.getElementById(i.toString()).value);
     }
     console.log("user guess is: " + guessAsString + "!");
@@ -396,6 +399,7 @@ function validateUserGuess() {
     // make sure it's a word
     if (!isValidGuess(guessAsString)) {
         console.log("not a word");
+        toastr.error("Not a valid word");
         return false;
     }
 
@@ -406,7 +410,7 @@ function validateUserGuess() {
 
             // figure out if it's a common or rare solution, and add to the appropriate wordlist
             var wordlist;
-            if(inversleInProgress.commonSolutions.has(guessAsString)){
+            if (inversleInProgress.commonSolutions.has(guessAsString)) {
                 inversleInProgress.numCommonFound++;
                 var title = document.getElementById("common-heading");
                 title.textContent = "Common solutions found: " + inversleInProgress.numCommonFound + "/" + inversleInProgress.commonSolutions.size;
@@ -415,12 +419,17 @@ function validateUserGuess() {
                 inversleInProgress.numRareFound++;
                 var title = document.getElementById("rare-heading");
                 title.textContent = "Rare solutions found: " + inversleInProgress.numRareFound + "/" + inversleInProgress.rareSolutions.size;
-                wordlist = document.getElementById("rare"); 
+                wordlist = document.getElementById("rare");
             }
 
             var paragraph = document.createElement("p");
-                paragraph.innerHTML = guessAsString;
-                wordlist.append(paragraph);
+            paragraph.innerHTML = guessAsString;
+            wordlist.append(paragraph);
+
+            toastr.success("Correct!");
+        }
+        else {
+            toastr.success("Solution already found");
         }
 
         statsBox.style.display = "block";
@@ -428,6 +437,7 @@ function validateUserGuess() {
     }
 
     console.log("incorrect guess");
+    toastr.info("Not a solution");
     return false;
 }
 
@@ -506,14 +516,14 @@ function userInputEvents(e) {
     }
 
     // if all letters are entered, check the guess
-    if (numSquaresChecked == NUM_LETTERS){
+    if (numSquaresChecked == NUM_LETTERS) {
         if (validateUserGuess()) {
             console.log("you got it right!");
         }
     }
     else {
         currSquare.focus();
-    }    
+    }
 }
 
 // allow moving around using arrow keys, backspace, and delete. Commit guess on enter.
@@ -570,7 +580,7 @@ function toggleDarkLight() {
 
     // update button text based on theme
     const className = document.body.className;
-    if(className == "light-theme"){
+    if (className == "light-theme") {
         switcher.style.backgroundImage = "url('icons/moon.jpg')";
         switcher.textContent = "Dark"; // sighted user won't see this but button text for those with screenreaders
         document.getElementById("stats").style.backgroundImage = "url('icons/stats-light.jpg')";
@@ -586,16 +596,16 @@ function toggleDarkLight() {
 }
 
 // menu pop-ups
-function toggleStatsMenu(){
-    if (document.getElementById("statsPopup").style.display == "block"){
+function toggleStatsMenu() {
+    if (document.getElementById("statsPopup").style.display == "block") {
         document.getElementById("statsPopup").style.display = "none";
     }
     else {
         document.getElementById("statsPopup").style.display = "block";
     }
 }
-function toggleHelpMenu(){
-    if (document.getElementById("helpPopup").style.display == "block"){
+function toggleHelpMenu() {
+    if (document.getElementById("helpPopup").style.display == "block") {
         document.getElementById("helpPopup").style.display = "none";
     }
     else {
