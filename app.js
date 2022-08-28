@@ -124,8 +124,6 @@ class Inversle {
 const wordleInProgress = new Wordle(todaysWordle());
 const inversleInProgress = new Inversle();
 
-const userGuess = ['', '', '', '', '']; // the user's guess
-
 /* ***********************************************
  *                                               *
  *                Wordle Logic                   *
@@ -386,8 +384,12 @@ function generateInversle() {
 }
 
 // validate if the user's answer is correct, and show the stats box if so.
-function validateUserGuess(guess) {
-    let guessAsString = guess[0].concat(guess[1], guess[2], guess[3], guess[4]);
+function validateUserGuess() {
+    // get the user's guess
+    var guessAsString = "";
+    for(var i = 0; i < NUM_LETTERS; i++){
+        guessAsString = guessAsString.concat(document.getElementById(i.toString()).value);
+    }
     console.log("user guess is: " + guessAsString + "!");
     const statsBox = document.getElementById("statsPopup");
 
@@ -470,8 +472,11 @@ function addInputs(word) {
         box.setAttribute('type', 'text');
         box.setAttribute('maxlength', '1');
         box.id = i.toString();
-        box.addEventListener("keyup", function (event) {
+        box.addEventListener("input", function (event) {
             userInputEvents(event);
+        });
+        box.addEventListener("keydown", function (event) {
+            keyboardEvents(event);
         });
         row.appendChild(box);
     }
@@ -484,25 +489,55 @@ function addInputs(word) {
  *                Event Listeners                *
  *                                               *  
  * ***********************************************/
-
-// automatically move to next box on keyboard input
+// Automatically move to the next open input after typing a letter, and commit guess if all letters typed
 function userInputEvents(e) {
-    let pressedKey = String(e.key);
+    // console.log("Input! " + e.target.value);
 
-    //console.log("keyup! " + pressedKey);
+    let currIdx = Number(document.activeElement.id);
+    var currSquare = e.target;
+
+    // auto move to the next open element. Won't move if they just deleted what's in their current square, since it will be empty
+    var numSquaresChecked = 0;
+    while (numSquaresChecked < NUM_LETTERS && currSquare.value != 0) {
+        currIdx = (currIdx + 1) % NUM_LETTERS;
+        currSquare = document.getElementById(currIdx.toString());
+
+        numSquaresChecked++;
+    }
+
+    // if all letters are entered, check the guess
+    if (numSquaresChecked == NUM_LETTERS){
+        if (validateUserGuess()) {
+            console.log("you got it right!");
+        }
+    }
+    else {
+        currSquare.focus();
+    }    
+}
+
+// allow moving around using arrow keys, backspace, and delete. Commit guess on enter.
+function keyboardEvents(e) {
+    let pressedKey = String(e.key);
+    //console.log("keydown! " + pressedKey);
 
     const curr = document.activeElement;
     //console.log("active element: " + curr.id);
+    //console.log("current value: " + curr.value);
     let currIdx = Number(curr.id);
 
     switch (pressedKey) {
         case "Backspace":
-            // figure out if they just deleted the letter in their current square, or want to move to and delete the previous square?
-            if (userGuess[currIdx] != '') {
-                userGuess[currIdx] = ''
-            } else if (currIdx > 0) { // can't delete anything before the first letter
+            // figure out if they're about ot delete their current square, or want to move to and delete the previous square
+            if (curr.value == "" && currIdx > 0) {
                 currIdx--;
-                userGuess[currIdx] = '';
+                document.getElementById(currIdx.toString()).value = '';
+            }
+            break;
+        case "Delete":
+            // figure out if they're about ot delete their current square, or want to move to and delete the next square
+            if (curr.value == "" && currIdx < NUM_LETTERS - 1) {
+                currIdx++;
                 document.getElementById(currIdx.toString()).value = '';
             }
             break;
@@ -510,55 +545,18 @@ function userInputEvents(e) {
             currIdx--;
             break;
         case "ArrowRight":
-        case "Enter":
-            currIdx = 5; // check guess on enter
-            break;
-        case "a":
-        case "b":
-        case "c":
-        case "d":
-        case "e":
-        case "f":
-        case "g":
-        case "h":
-        case "i":
-        case "j":
-        case "k":
-        case "l":
-        case "m":
-        case "n":
-        case "o":
-        case "p":
-        case "q":
-        case "r":
-        case "s":
-        case "t":
-        case "u":
-        case "v":
-        case "w":
-        case "x":
-        case "y":
-        case "z":
-            // move to the next and add it to the current guess
-            userGuess[currIdx] = pressedKey;
-            curr.value = pressedKey;
             currIdx++;
             break;
+        case "Enter":
+            validateUserGuess();
+            break;
         default:
-            // do noting
-            curr.textContent = "";
-            console.log(pressedKey);
+            break;
     }
 
-    // do we move to the next/prev square?
-    if (currIdx < 5 && currIdx >= 0) {
+    // move to the next/prev square, if we can
+    if (currIdx < NUM_LETTERS && currIdx >= 0) {
         document.getElementById(currIdx.toString()).focus();
-    }
-    // or are we at a place where we can check their guess?
-    else if (currIdx == 5) {
-        if (validateUserGuess(userGuess)) {
-            console.log("you got it right!");
-        }
     }
 }
 
