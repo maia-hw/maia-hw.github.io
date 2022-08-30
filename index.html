@@ -28,23 +28,28 @@
     <body class="light-theme">
         <!-- popups are hidden untill clicked, but still there -->
         <div class="popup" id = "statsPopup">
-            STATISTICS
-            <button onClick="toggleStatsMenu()">X</button>
-            <div class="found-nswers" id="common">
-
+            <div class="popup-title">
+                <div class="popup-button-spacer"></div>
+                <p class="popup-title-text">STATISTICS</p>
+                <div class="popup-button-spacer">
+                    <button onClick="toggleStatsMenu()">X</button>
+                </div>
             </div>
-            <div class="found-nswers" id="rare">
-
-            </div>
+            <div class="found-nswers" id="common"></div>
+            <div class="found-nswers" id="rare"></div>
         </div>
         <div class="popup" id = "helpPopup">
-            HOW TO PLAY
-            <button onClick="toggleHelpMenu()">X</button>
+            <div class="popup-title">
+                <div class="popup-button-spacer"></div>
+                <p class="popup-title-text">HOW TO PLAY</p>
+                <div class="popup-button-spacer">
+                    <button onClick="toggleHelpMenu()">X</button>
+                </div>
+            </div>
             <p>Guess the missing word in the wordle solution! Assume the wordle player is playing in hard mode - they always use all revealed hints.</p>
             For example:
             <div class="game-board"><div class="row"><div class="square wrong-spot">a</div><div class="square incorrect">b</div><div class="square incorrect">b</div><div class="square incorrect">e</div><div class="square incorrect">y</div></div><div class="row"><div class="square incorrect">p</div><div class="square wrong-spot">a</div><div class="square incorrect">n</div><div class="square incorrect">i</div><div class="square incorrect">c</div></div><div class="row"><div class="square incorrect"> </div><div class="square wrong-spot"> </div><div class="square wrong-spot"> </div><div class="square correct"> </div><div class="square incorrect"></div></div><div class="row"><div class="square wrong-spot">f</div><div class="square wrong-spot">l</div><div class="square wrong-spot">o</div><div class="square correct">a</div><div class="square incorrect">t</div></div><div class="row"><div class="square correct">o</div><div class="square correct">f</div><div class="square correct">f</div><div class="square correct">a</div><div class="square correct">l</div></div></div>
-            
-            The missing guess could be solar, or molar, but not polar because we already know that the word does not contain a P.
+            <p>The missing guess could be solar, or molar, but not polar because we already know that the word does not contain a P.</p>
         </div>
         <!-- game board always shows up -->
         <div class="game-board" id="game-board"></div>

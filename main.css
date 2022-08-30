@@ -22,7 +22,7 @@ header {
     height: 15vw;
     max-height: 7vh;  
     line-height: 5vh;
-    border-bottom: 1px solid var(--borderColor);; 
+    border-bottom: 1px solid var(--borderColor); 
     display: flex;
     justify-content: center;
     align-content: center;
@@ -106,6 +106,31 @@ h1 {
     border: 3px outset var(--borderColor);
     background-color: var(--bg);
     padding: 5px;
+}
+
+.popup-title {
+    width: 100%;
+    white-space: nowrap;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}
+
+.popup-title-text {
+    display: inline;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0.5em;
+    margin-bottom: 0;
+    padding-left: 3%;
+    padding-right: 3%;
+}
+
+.popup-button-spacer {
+    position: relative;
+    display: inline-block;
+    width: 10%;
 }
 
 .correct {
