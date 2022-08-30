@@ -393,9 +393,12 @@ function validateUserGuess() {
     for (var i = 0; i < NUM_LETTERS; i++) {
         guessAsString = guessAsString.concat(document.getElementById(i.toString()).value);
     }
+    // don't be case-sensitive
+    guessAsString = guessAsString.toLowerCase();
+
     console.log("user guess is: " + guessAsString + "!");
     const statsBox = document.getElementById("statsPopup");
-
+    
     // make sure it's a word
     if (!isValidGuess(guessAsString)) {
         console.log("not a word");
