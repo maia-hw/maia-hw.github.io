@@ -502,15 +502,14 @@ function addInputs(word) {
  *                Event Listeners                *
  *                                               *  
  * ***********************************************/
-// Automatically move to the next open input after typing a letter, and commit guess if all letters typed
-function userInputEvents(e) {
-    // console.log("Input! " + e.target.value);
 
-    let currIdx = Number(document.activeElement.id);
-    var currSquare = e.target;
-
-    // auto move to the next open element. Won't move if they just deleted what's in their current square, since it will be empty
+// helper function - set focus to the next open input
+//  Param   - index to start looking for open inputs at
+//  Returns - the index of the square we set focus to. -1 if all sqaures are full
+function focusNextOpenInput(start) {
+    var currIdx = start;
     var numSquaresChecked = 0;
+    var currSquare = document.getElementById(currIdx.toString());;
     while (numSquaresChecked < NUM_LETTERS && currSquare.value != 0) {
         currIdx = (currIdx + 1) % NUM_LETTERS;
         currSquare = document.getElementById(currIdx.toString());
@@ -518,14 +517,29 @@ function userInputEvents(e) {
         numSquaresChecked++;
     }
 
-    // if all letters are entered, check the guess
+    // if all letters are entered, don't set focus and return -1
     if (numSquaresChecked == NUM_LETTERS) {
-        if (validateUserGuess()) {
-            console.log("you got it right!");
-        }
+        return -1;
     }
     else {
         currSquare.focus();
+        return currIdx;
+    }
+}
+
+// Automatically move to the next open input after typing a letter, and commit guess if all letters typed
+function userInputEvents(e) {
+    // console.log("Input! " + e.target.value);
+
+    // auto move to the next open element. Won't move if they just deleted what's in their current square, since it will be empty
+    let currIdx = Number(e.target.id);
+    var emptySquare = focusNextOpenInput(currIdx)
+
+    // if all letters are entered, check the guess
+    if (emptySquare == -1) {
+        if (validateUserGuess()) {
+            console.log("you got it right!");
+        }
     }
 }
 
@@ -602,17 +616,21 @@ function toggleDarkLight() {
 function toggleStatsMenu() {
     if (document.getElementById("statsPopup").style.display == "block") {
         document.getElementById("statsPopup").style.display = "none";
+        focusNextOpenInput(0); // set focus if we can
     }
     else {
         document.getElementById("statsPopup").style.display = "block";
+        document.getElementById("helpPopup").style.display = "none"; // close the other one, in case it was also open
     }
 }
 function toggleHelpMenu() {
     if (document.getElementById("helpPopup").style.display == "block") {
         document.getElementById("helpPopup").style.display = "none";
+        focusNextOpenInput(0); // set focus if we can
     }
     else {
         document.getElementById("helpPopup").style.display = "block";
+        document.getElementById("statsPopup").style.display = "none"; // close the other one, in case it was also open
     }
 }
 
@@ -671,6 +689,6 @@ window.onload = function () {
         currGuess = currGuess.next;
     }
 
-    // set focus to the first input
-    document.getElementById("0").focus();
+    // display the help pop-up on load. focus will be set when user closes the pop-up
+    document.getElementById("helpPopup").style.display = "block"
 }
