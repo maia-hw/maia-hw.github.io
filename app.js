@@ -200,13 +200,13 @@ function isGoodGuess(guess, knowledge) {
     for (const [letter, quantity] of knowledge.contains.entries()) {
         var numOccurences = 0;
         var foundIdx = guess.indexOf(letter);
-        while(foundIdx != -1){
+        while (foundIdx != -1) {
             numOccurences++;
             foundIdx = guess.indexOf(letter, foundIdx + 1);
         }
 
         // at least the min
-        if(numOccurences < quantity[0]){
+        if (numOccurences < quantity[0]) {
             return false;
         }
         // at most the max
@@ -466,9 +466,8 @@ function validateUserGuess() {
     else if (inversle.rareSolutions.has(guessAsString)) {
         if (!inversle.userFoundSolutions.has(guessAsString)) {
             inversle.userFoundSolutions.add(guessAsString);
-            inversle.numCommonFound++;
-
             inversle.numRareFound++;
+
             var title = document.getElementById("rare-heading");
             title.textContent = "Rare solutions found: " + inversle.numRareFound + "/" + inversle.rareSolutions.size;
             var wordlist = document.getElementById("rare");
@@ -691,11 +690,10 @@ function toggleHelpMenu() {
 
 // generate the puzzle when the user loads the window
 window.onload = function () {
-    try{
+    try {
         // generate the puzzle
-        const today = new Date();
-        var wordleInProgress = new Wordle(todaysWordle(today));
-
+    const today = new Date();
+    var wordleInProgress = new Wordle(todaysWordle(today));
         // first guess, in a deterministic way
         var guessIdx = today.getDate() * (today.getMonth() + 1);
         var guess = valid_solutions[guessIdx % valid_solutions.length];
@@ -749,3 +747,35 @@ window.onload = function () {
     // display the help pop-up on load. focus will be set when user closes the pop-up
     document.getElementById("helpPopup").style.display = "block";
 }
+
+/* ***********************************************
+ *                                               *
+ *                Countdown timer                *
+ *                                               *  
+ * ***********************************************/
+// modified from https://www.w3schools.com/howto/howto_js_countdown.asp
+const today = new Date();
+const countDownTo = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
+
+var timer = setInterval(function()  {
+    // Get today's date and time
+    var now = new Date();
+    
+    // Find the distance between now and the count down date
+    var timeLeft = countDownTo - now;
+
+    // Time calculations for hours, minutes and seconds
+    var hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    // Output the result in an element with id="demo"
+    document.getElementById("timer").innerHTML = "Next Inversle in " + hours + "h "
+        + minutes + "m " + seconds + "s";
+
+    // We are already at the next day
+    if (timeLeft < 0) {
+        clearInterval(timer);
+        document.getElementById("timer").innerHTML = "Next Inversle NOW";
+    }
+}, 1000);
