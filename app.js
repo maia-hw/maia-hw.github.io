@@ -32,7 +32,7 @@ class Letter {
 class KnowledgeState {
     constructor() {
         this.letters = [new Letter(), new Letter(), new Letter(), new Letter(), new Letter()]; // greens and blacks
-        this.contains = new Set(); // yellows
+        this.contains = new Map(); // yellows and greens with information on how many occurences of each letter: [min, max]
     }
 }
 
@@ -41,7 +41,7 @@ class Guess {
     constructor(word) {
         this.guess = word;
         this.knowledgeState = new KnowledgeState();
-        this.colours = getColours(word);
+        this.colours = null; // must update when adding the guess
         this.next = null;
         this.prev = null;
     }
@@ -57,12 +57,11 @@ class Wordle {
         this.length = 0;
     }
 
-    // makeGuess is like push, pushes a new Guess to the list
+    // makeGuess is like push, pushes a new Guess to the list. also updates the guess's knowledge state
     makeGuess(word) {
-        console.log("making guess: " + word);
-
         // Add new guess to list
         const newGuess = new Guess(word)
+        newGuess.colours = getColours(word, this.solution);
         if (this.length === 0) {
             this.first = newGuess;
             this.last = newGuess;
@@ -72,27 +71,76 @@ class Wordle {
             this.last = newGuess;
 
             newGuess.knowledgeState = structuredClone(newGuess.prev.knowledgeState); // copy values not reference
+            newGuess.knowledgeState.contains.clear(); // we'll re-do it with the current guess, which we already know has everything from the previous
         }
         this.length++;
 
-        // Update our state of knowledge for the new guess
-        for (var i = 0; i < 5; i++) {
-            // green
+        // Update our state of knowledge for the new guess.
+        var isUsed = [false, false, false, false, false]; // letters of the solution
+
+        // loop through the guess to find all greens
+        for (var i = 0; i < NUM_LETTERS; i++) {
             if (word[i] == this.solution[i]) {
                 newGuess.knowledgeState.letters[i].is = word[i];
-            }
-            // yellow
-            else if (this.solution.indexOf(word[i]) != -1) {
-                newGuess.knowledgeState.letters[i].isNot.add(word[i]);
-                newGuess.knowledgeState.contains.add(word[i]);
-            }
-            // black
-            else {
-                for (const letter of newGuess.knowledgeState.letters) {
-                    letter.isNot.add(word[i]);
+                isUsed[i] = true;
+
+                // update min num occurences
+                if (newGuess.knowledgeState.contains.has(word[i])) {
+                    newGuess.knowledgeState.contains.set(word[i], [newGuess.knowledgeState.contains.get(word[i])[0] + 1, null]);
+                }
+                else {
+                    newGuess.knowledgeState.contains.set(word[i], [1, null]);
                 }
             }
         }
+
+        // loop through guess for yellows/blacks
+        for (var i = 0; i < NUM_LETTERS; i++) {
+            // if NOT greeen
+            if (word[i] != this.solution[i]) {
+                // see if we can find this letter in the solution at a place that is not already used by a green/other yellow
+                var numKnownOccurences = 0;
+                var foundIdx = -1;
+                do {
+                    foundIdx = this.solution.indexOf(word[i], foundIdx + 1);
+
+                    if (foundIdx != -1) {
+                        numKnownOccurences++;
+                    }
+                } while (foundIdx != -1 && isUsed[foundIdx]);
+
+                // yellow and update min num occurences
+                if (foundIdx != -1) {
+                    newGuess.knowledgeState.letters[i].isNot.add(word[i]);
+                    isUsed[foundIdx] = true;
+                    // update min num occurences
+                    if (newGuess.knowledgeState.contains.has(word[i])) {
+                        newGuess.knowledgeState.contains.set(word[i], [newGuess.knowledgeState.contains.get(word[i])[0] + 1, null]);
+                    }
+                    else {
+                        newGuess.knowledgeState.contains.set(word[i], [1, null]);
+                    }
+                }
+                // black but we have a max number of occurences to set
+                else if (numKnownOccurences > 0) {
+                    newGuess.knowledgeState.letters[i].isNot.add(word[i]);
+                    isUsed[foundIdx] = true;
+
+                    // set max num occurences
+                    newGuess.knowledgeState.contains.set(word[i], [newGuess.knowledgeState.contains.get(word[i])[0], numKnownOccurences]);
+                }
+                // does not contain
+                else {
+                    for (const letter of newGuess.knowledgeState.letters) {
+                        letter.isNot.add(word[i]);
+                    }
+                }
+            }
+        }
+
+        // for (const [letter, quantity] of newGuess.knowledgeState.contains.entries()){
+        //    console.log("We know it contains at least " + quantity[0] + " of " + letter + " and at most " + quantity[1]);
+        // }
 
         if (word == this.solution) {
             this.found = true;
@@ -102,27 +150,24 @@ class Wordle {
     }
 }
 
-// All the properties of the Inversle
-class Inversle {
-    constructor() {
-        this.commonSolutions = new Set();
-        this.rareSolutions = new Set();
-        this.userFoundSolutions = new Set(); // use cookies for this in future to save user data even on reload?
-        this.numCommonFound = 0;
-        this.numRareFound = 0;
-        this.knowledgeState = new KnowledgeState();
-        this.colours = ["incorrect", "incorrect", "incorrect", "incorrect", "incorrect"];
-    }
-}
-
 /* ***********************************************
  *                                               *
  *            Global Variables :/                *
  *                                               *  
  * ***********************************************/
 
-const wordleInProgress = new Wordle(todaysWordle());
-const inversleInProgress = new Inversle();
+// const inversleInProgress = new Inversle();
+
+// All the properties of the Inversle
+const inversle = {
+    commonSolutions: new Set(),
+    rareSolutions: new Set(),
+    userFoundSolutions: new Set(), // use cookies for this in future to save user data even on reload?
+    numCommonFound: 0,
+    numRareFound: 0,
+    knowledgeState: new KnowledgeState(),
+    colours: ["incorrect", "incorrect", "incorrect", "incorrect", "incorrect"]
+};
 
 toastr.options.closeButton = true;
 toastr.options.timeOut = 1500;
@@ -142,39 +187,45 @@ function isValidGuess(guess) {
 }
 
 // select a new solution each day
-function todaysWordle() {
+function todaysWordle(today) {
     const start = new Date("2022-06-19");
-    const today = new Date();
     const todaysIndex = Math.floor((today - start) / 86400000);
 
     return valid_solutions[todaysIndex];
 }
 
-// see if a guess is a *good* guess
-function isGoodGuess(guess) {
-    // first guess can be anything
-    if (wordleInProgress.length == 0) {
-        return true;
-    }
+// see if a guess is a *good* guess, based on a given knowledgeState
+function isGoodGuess(guess, knowledge) {
+    // does it contain all the letters we know it has, in the right quantities?
+    for (const [letter, quantity] of knowledge.contains.entries()) {
+        var numOccurences = 0;
+        var foundIdx = guess.indexOf(letter);
+        while(foundIdx != -1){
+            numOccurences++;
+            foundIdx = guess.indexOf(letter, foundIdx + 1);
+        }
 
-    // does it contain all the letters we know it has?
-    for (const letter of wordleInProgress.last.knowledgeState.contains.values()) {
-        if (guess.indexOf(letter) == -1) {
+        // at least the min
+        if(numOccurences < quantity[0]){
+            return false;
+        }
+        // at most the max
+        else if (quantity[1] != null && numOccurences > quantity[1]) {
             return false;
         }
     }
 
-    // does each letter of the guess meet needs
+    // do we have all the things we know each letter is and is not
     for (var i = 0; i < NUM_LETTERS; i++) {
         // if a letter is known, is it that letter?
-        if (wordleInProgress.last.knowledgeState.letters[i].is != null) {
-            if (guess[i] != wordleInProgress.last.knowledgeState.letters[i].is) {
+        if (knowledge.letters[i].is != null) {
+            if (guess[i] != knowledge.letters[i].is) {
                 return false;
             }
         }
 
         // is each letter NOT something we know it is not
-        for (const letter of wordleInProgress.last.knowledgeState.letters[i].isNot.values()) {
+        for (const letter of knowledge.letters[i].isNot.values()) {
             if (guess[i] == letter) {
                 return false;
             }
@@ -185,22 +236,22 @@ function isGoodGuess(guess) {
 }
 
 // wordle box colours
-function getColours(word) {
+function getColours(word, solution) {
     // figure out what colour each box will be by looping over the wordle
     // doing it this way so we don't get two yellows when should be only one
     const colours = ["incorrect", "incorrect", "incorrect", "incorrect", "incorrect"];
     for (var i = 0; i < NUM_LETTERS; i++) {
-        if (word[i] == wordleInProgress.solution[i]) {
+        if (word[i] == solution[i]) {
             colours[i] = "correct";
         }
-        else if (word.indexOf(wordleInProgress.solution[i]) != -1) {
+        else if (word.indexOf(solution[i]) != -1) {
             // also need to check that we haven't already looked at this part of the wordle
             // for example if words are:
             //      delay
             //      jelly
             // the l in delay can't be yellow instead of green
-            if (colours[word.indexOf(wordleInProgress.solution[i])] != "correct") {
-                colours[word.indexOf(wordleInProgress.solution[i])] = "wrong-spot";
+            if (colours[word.indexOf(solution[i])] != "correct") {
+                colours[word.indexOf(solution[i])] = "wrong-spot";
             }
         }
     }
@@ -216,11 +267,12 @@ function getColours(word) {
 
 // consolidate wordle solution if two guesses have the same colours and no yellows
 // i.e. too many options' brass, grass, crass, etc -> these could all be inversle solutions for the same colours
-function consolidateWordle() {
-    var currGuess = wordleInProgress.first.next;
+// param wordle is a reference to a wordle onject, and this function will modify the thing it refers to.
+function consolidateWordle(wordle) {
+    var currGuess = wordle.first.next;
 
     // must be at least two left (the duplicate and the solution)
-    while (currGuess.next.next != null) {
+    while (currGuess.next != null && currGuess.next.next != null) {
         if (coloursMatch(currGuess.next.colours, currGuess.colours) && currGuess.colours.indexOf("wrong-spot") == -1) {
             // next guess adds little information, get rid of it
             console.log("Consolidating: removing " + currGuess.next.guess);
@@ -240,7 +292,7 @@ function consolidateWordle() {
         currGuess = currGuess.next;
     }
 }
-// helper function for consiolidateWordle
+// helper function for consolidateWordle
 function coloursMatch(arrayA, arrayB) {
     for (var i = 0; i < 5; i++) {
         if (arrayA[i] != arrayB[i]) {
@@ -252,39 +304,48 @@ function coloursMatch(arrayA, arrayB) {
 }
 
 // figure out if guess is a possible inversle solution, based on the current inversleInProgress knowledge state
-function isValidInversle(guess) {
-    const colours = getColours(guess);
+// guess must be a real word, before calling
+function isValidInversle(guess, wordlePtr, guessNum) {
+    // see if we could've solved the wordle with this guess
+    var wordleCopy = new Wordle(wordlePtr.solution) // making copies because idk how to do pointers in javascript.
+    var guessPtr = wordlePtr.first;
 
-    for (var i = 0; i < NUM_LETTERS; i++) {
-        // do we use all the known letters in the right spots
-        if (inversleInProgress.knowledgeState.letters[i].is != null) {
-            if (guess[i] != inversleInProgress.knowledgeState.letters[i].is) {
-                //console.log("not using a known letter: " + inversleInProgress.knowledgeState.letters[i].is);
-                return false;
-            }
+    // get the guessPtr pointing to one before the hidden guess and get the inversle's wordle up to speed
+    var guesscnt = 0;
+    while (guesscnt < guessNum) {
+        wordleCopy.makeGuess(guessPtr.guess);
+        guessPtr = guessPtr.next;
+        guesscnt++;
+    }
+
+    // make sure the colours match
+    if (!coloursMatch(getColours(guess, wordleCopy.solution), guessPtr.colours)) {
+        return false;
+    }
+
+    // if the hidden guess is the first guess, we don't need to check anything other than colours
+    if (guessNum == 0) {
+        return true;
+    }
+
+    // is it a good guess for the inversle's knowledgeState?
+    if (isGoodGuess(guess, wordleCopy.last.knowledgeState)) {
+        wordleCopy.makeGuess(guess);
+    }
+    else {
+        return false;
+    }
+
+    // are all future wordle guesses still valid?
+    guessPtr = guessPtr.next;
+    while (guessPtr != null) {
+        if (!isGoodGuess(guessPtr.guess, wordleCopy.last.knowledgeState)) {
+            return false
         }
 
-        // do we use all the letters we know it contains?
-        for (const letter of inversleInProgress.knowledgeState.contains.values()) {
-            if (guess.indexOf(letter) == -1) {
-                //console.log("unot using a letter you should: " + letter);
-                return false;
-            }
-        }
+        wordleCopy.makeGuess(guessPtr.guess);
 
-        // don't guess a letter in a position where we know this letter is not
-        for (const letter of inversleInProgress.knowledgeState.letters[i].isNot.values()) {
-            if (guess[i] == letter) {
-                //console.log("using a letter you shouldnt: " + letter);
-                return false;
-            }
-        }
-
-        // do they match the hidden colours?
-        if (colours[i] != inversleInProgress.colours[i]) {
-            //console.log("colours dont match");
-            return false;
-        }
+        guessPtr = guessPtr.next;
     }
 
     //console.log("It's right!");
@@ -292,16 +353,16 @@ function isValidInversle(guess) {
 }
 
 // find all possible solutions to this Inversle, based on the current inversleInProgress knowledge state. Returns the total number of solutions found
-function getAllInverlses() {
-    inversleInProgress.commonSolutions.clear();
-    inversleInProgress.rareSolutions.clear();
+function getAllInverlses(wordle, guessNum) {
+    inversle.commonSolutions.clear();
+    inversle.rareSolutions.clear();
 
     var idx = 0;
     while (idx < valid_solutions.length) {
         let guess = valid_solutions[idx];
 
-        if (isValidInversle(guess)) {
-            inversleInProgress.commonSolutions.add(guess);
+        if (isValidInversle(guess, wordle, guessNum)) {
+            inversle.commonSolutions.add(guess);
         }
 
         idx++
@@ -311,8 +372,8 @@ function getAllInverlses() {
     while (idx < valid_guesses.length) {
         let guess = valid_guesses[idx];
 
-        if (isValidInversle(guess)) {
-            inversleInProgress.rareSolutions.add(guess);
+        if (isValidInversle(guess, wordle, guessNum)) {
+            inversle.rareSolutions.add(guess);
         }
 
         idx++
@@ -320,69 +381,42 @@ function getAllInverlses() {
 
     // debug
     console.log("Correct answers: (common)")
-    for (var word of inversleInProgress.commonSolutions.values()) {
+    for (var word of inversle.commonSolutions.values()) {
         console.log(word);
     }
     console.log("Correct answers: (rare)")
-    for (var word of inversleInProgress.rareSolutions.values()) {
+    for (var word of inversle.rareSolutions.values()) {
         console.log(word);
     }
 
-    return inversleInProgress.commonSolutions.size + inversleInProgress.rareSolutions.size;
+    return inversle.commonSolutions.size + inversle.rareSolutions.size;
 }
 
-// generate the inversle
-function generateInversle() {
+// generate the inversle based on a given wordle
+function generateInversle(wordle) {
     var wordleStep = new Wordle();
-    wordleStep = structuredClone(wordleInProgress.last); // start by assuming we hide the second-to-last
+    wordleStep = structuredClone(wordle.last); // start by assuming we hide the second-to-last
 
     var numSolutions = 0;
+    var hiddenIdx = wordle.length - 1; // 0 idxed and start 1 from last
     do {
         wordleStep = wordleStep.prev;
+        hiddenIdx--;
         console.log("inversle: " + wordleStep.guess);
 
-        // inversle knowledge state based on prev wordle guesses
-        inversleInProgress.colours = structuredClone(wordleStep.colours);
-        inversleInProgress.knowledgeState.contains = structuredClone(wordleStep.prev.knowledgeState.contains);
-        for (var i = 0; i < NUM_LETTERS; i++) {
-            inversleInProgress.knowledgeState.letters[i].is = structuredClone(wordleStep.knowledgeState.letters[i].is);
-            inversleInProgress.knowledgeState.letters[i].isNot = structuredClone(wordleStep.prev.knowledgeState.letters[i].isNot);
-        }
-
-        // for all the next guesses, we know each letter of the inversle is not something that is incorrect in a future guess
-        // because don't make the same incorrect guess twice.
-        var futureWordle = new Wordle();
-        futureWordle = structuredClone(wordleStep);
-        while (futureWordle.next != null) {
-            futureWordle = futureWordle.next;
-            // console.log("future wordle: " + futureWordle.guess);
-            for (var i = 0; i < NUM_LETTERS; i++) {
-                if (futureWordle.colours[i] == "incorrect") {
-                    // can't be anywhere in the word
-                    for (var n = 0; n < NUM_LETTERS; n++) {
-                        inversleInProgress.knowledgeState.letters[n].isNot.add(futureWordle.guess[i]);
-                    }
-                }
-                else if (futureWordle.colours[i] == "wrong-spot") {
-                    // cant be in this spot
-                    inversleInProgress.knowledgeState.letters[i].isNot.add(futureWordle.guess[i]);
-                }
-            }
-        }
-
-        numSolutions = getAllInverlses();
+        numSolutions = getAllInverlses(wordle, hiddenIdx);
     } while (numSolutions < MIN_INVERSLES && wordleStep.prev != null);
 
     // start filling out the stats box
     var statsBox = document.getElementById("common");
     var paragraph = document.createElement("h2");
     paragraph.id = "common-heading";
-    paragraph.innerHTML = "Common solutions found: 0/" + inversleInProgress.commonSolutions.size;
+    paragraph.innerHTML = "Common solutions found: 0/" + inversle.commonSolutions.size;
     statsBox.append(paragraph);
     statsBox = document.getElementById("rare");
     paragraph = document.createElement("h2");
     paragraph.id = "rare-heading";
-    paragraph.innerHTML = "Rare solutions found: 0/" + inversleInProgress.rareSolutions.size;
+    paragraph.innerHTML = "Rare solutions found: 0/" + inversle.rareSolutions.size;
     statsBox.append(paragraph);
 }
 
@@ -398,49 +432,64 @@ function validateUserGuess() {
 
     console.log("user guess is: " + guessAsString + "!");
     const statsBox = document.getElementById("statsPopup");
-    
+
     // make sure it's a word
     if (!isValidGuess(guessAsString)) {
         console.log("not a word");
-        toastr.error("Not a valid word");
+        toastr.error("Not a valid word: " + guessAsString);
         return false;
     }
+    // is it a common solution?
+    else if (inversle.commonSolutions.has(guessAsString)) {
+        // only show the popup if they didn't already find it
+        if (!inversle.userFoundSolutions.has(guessAsString)) {
+            inversle.userFoundSolutions.add(guessAsString);
+            inversle.numCommonFound++;
 
-    if (isValidInversle(guessAsString)) {
-        // if we haven't already found this one, add it to the list
-        if (!inversleInProgress.userFoundSolutions.has(guessAsString)) {
-            inversleInProgress.userFoundSolutions.add(guessAsString);
-
-            // figure out if it's a common or rare solution, and add to the appropriate wordlist
-            var wordlist;
-            if (inversleInProgress.commonSolutions.has(guessAsString)) {
-                inversleInProgress.numCommonFound++;
-                var title = document.getElementById("common-heading");
-                title.textContent = "Common solutions found: " + inversleInProgress.numCommonFound + "/" + inversleInProgress.commonSolutions.size;
-                wordlist = document.getElementById("common");
-            } else {
-                inversleInProgress.numRareFound++;
-                var title = document.getElementById("rare-heading");
-                title.textContent = "Rare solutions found: " + inversleInProgress.numRareFound + "/" + inversleInProgress.rareSolutions.size;
-                wordlist = document.getElementById("rare");
-            }
-
+            var title = document.getElementById("common-heading");
+            title.textContent = "Common solutions found: " + inversle.numCommonFound + "/" + inversle.commonSolutions.size;
+            var wordlist = document.getElementById("common");
             var paragraph = document.createElement("p");
             paragraph.innerHTML = guessAsString;
             wordlist.append(paragraph);
 
             toastr.success("Correct!");
+            statsBox.style.display = "block";
         }
         else {
-            toastr.success("Solution already found");
+            toastr.success("Solution already found: " + guessAsString);
         }
 
-        statsBox.style.display = "block";
         return true;
     }
+    // is it a rare solution?
+    else if (inversle.rareSolutions.has(guessAsString)) {
+        if (!inversle.userFoundSolutions.has(guessAsString)) {
+            inversle.userFoundSolutions.add(guessAsString);
+            inversle.numCommonFound++;
 
-    console.log("incorrect guess");
-    toastr.info("Not a solution");
+            inversle.numRareFound++;
+            var title = document.getElementById("rare-heading");
+            title.textContent = "Rare solutions found: " + inversle.numRareFound + "/" + inversle.rareSolutions.size;
+            var wordlist = document.getElementById("rare");
+            var paragraph = document.createElement("p");
+            paragraph.innerHTML = guessAsString;
+            wordlist.append(paragraph);
+
+            toastr.success("Correct!");
+            statsBox.style.display = "block";
+        }
+        else {
+            toastr.success("Solution already found: " + guessAsString);
+        }
+
+        return true;
+    }
+    else {
+        console.log("incorrect guess");
+        toastr.info("Not a solution: " + guessAsString);
+    }
+
     return false;
 }
 
@@ -452,11 +501,11 @@ function validateUserGuess() {
 
 // Add a row of boxes containg a word
 // https://stackoverflow.com/questions/1115310/how-can-i-add-a-class-to-a-dom-element-in-javascript#:~:text=%2F%2F%20Create%20a%20div%20and%20add%20a%20class,appending%20classes%20new_row.className%20%3D%20new_row.className%20%2B%20%22%20yetAClass%22%3B
-function addRow(word) {
+function addRow(word, wordle) {
     var row = document.createElement("div");
     row.classList.add("row");
 
-    const colours = getColours(word);
+    const colours = getColours(word, wordle.solution);
 
     // add each letter by looping over the inversle
     for (var i = 0; i < NUM_LETTERS; i++) {
@@ -471,11 +520,11 @@ function addRow(word) {
 }
 
 // add row of input boxes
-function addInputs(word) {
+function addInputs(word, wordle) {
     var row = document.createElement("div");
     row.classList.add("row");
 
-    const colours = getColours(word);
+    const colours = getColours(word, wordle.solution);
 
     // add each box now
     for (var i = 0; i < NUM_LETTERS; i++) {
@@ -642,53 +691,61 @@ function toggleHelpMenu() {
 
 // generate the puzzle when the user loads the window
 window.onload = function () {
+    try{
+        // generate the puzzle
+        const today = new Date();
+        var wordleInProgress = new Wordle(todaysWordle(today));
 
-    // generate the puzzle
-    const today = new Date();
-    var guessIdx = today.getDate() * (today.getMonth() + 1); // first guess, in a deterministic way
-    var iterations = 0;
+        // first guess, in a deterministic way
+        var guessIdx = today.getDate() * (today.getMonth() + 1);
+        var guess = valid_solutions[guessIdx % valid_solutions.length];
+        console.log("making guess: " + guess);
+        wordleInProgress.makeGuess(guess); // no need to check if good, first guess can be anything
 
-    while (!wordleInProgress.found) {
-        // make a guess
-        let guess = valid_solutions[guessIdx % valid_solutions.length];
+        var iterations = 0;
+        while (!wordleInProgress.found) {
+            // make a guess, if it's good as of the most recent knowledgeState
+            guessIdx++;
+            guess = valid_solutions[guessIdx % valid_solutions.length];
 
-        if (isGoodGuess(guess)) {
-            wordleInProgress.makeGuess(guess);
+            if (isGoodGuess(guess, wordleInProgress.last.knowledgeState)) {
+                console.log("making guess: " + guess);
+                wordleInProgress.makeGuess(guess);
+            }
+
+            // no infinite loop
+            iterations++
+            if (iterations >= valid_solutions.length + 10) {
+                console.log("couldnt find solution: " + wordleInProgress.solution);
+                throw "infinite loop";
+
+                return;
+            }
         }
 
-        guessIdx++;
-        iterations++
+        // make things look nicer
+        consolidateWordle(wordleInProgress);
 
-        // no infinite loop
-        if (iterations >= valid_solutions.length + 10) {
-            console.log("solution: " + wordleInProgress.solution);
-            console.log("Guesses made: ");
+        // generate the solution
+        generateInversle(wordleInProgress);
 
-            window.alert("Sorry, Inversle encountered a problem. Try again tomorrow.");
+        // display all the words!
+        var currGuess = wordleInProgress.first;
+        while (currGuess != null) {
+            // hide the one that is the inversle. will be a 'common' word
+            if (inversle.commonSolutions.has(currGuess.guess)) {
+                addInputs(currGuess.guess, wordleInProgress);
+            } else {
+                addRow(currGuess.guess, wordleInProgress);
+            }
 
-            return;
+            currGuess = currGuess.next;
         }
     }
-
-    // make things look nicer
-    consolidateWordle();
-
-    // generate the solution
-    generateInversle();
-
-    // display all the words!
-    var currGuess = wordleInProgress.first;
-    while (currGuess != null) {
-        // hide the one that is the inversle. will be a 'common' word
-        if (inversleInProgress.commonSolutions.has(currGuess.guess)) {
-            addInputs(currGuess.guess);
-        } else {
-            addRow(currGuess.guess);
-        }
-
-        currGuess = currGuess.next;
+    catch {
+        window.alert("Sorry, Inversle encountered a problem. Try again tomorrow.");
     }
 
     // display the help pop-up on load. focus will be set when user closes the pop-up
-    document.getElementById("helpPopup").style.display = "block"
+    document.getElementById("helpPopup").style.display = "block";
 }
