@@ -156,8 +156,6 @@ class Wordle {
  *                                               *  
  * ***********************************************/
 
-// const inversleInProgress = new Inversle();
-
 // All the properties of the Inversle
 const inversle = {
     commonSolutions: new Set(),
@@ -188,7 +186,7 @@ function isValidGuess(guess) {
 
 // select a new solution each day
 function todaysWordle(today) {
-    const start = new Date("2022-06-19");
+    const start = new Date("2021-06-21") - 60000*today.getTimezoneOffset();
     const todaysIndex = Math.floor((today - start) / 86400000);
 
     return valid_solutions[todaysIndex];
@@ -692,8 +690,11 @@ function toggleHelpMenu() {
 window.onload = function () {
     try {
         // generate the puzzle
-    const today = new Date();
-    var wordleInProgress = new Wordle(todaysWordle(today));
+        const today = new Date();
+        var wordleInProgress = new Wordle(todaysWordle(today));
+
+        console.log("today (onload): " + today);
+
         // first guess, in a deterministic way
         var guessIdx = today.getDate() * (today.getMonth() + 1);
         var guess = valid_solutions[guessIdx % valid_solutions.length];
@@ -757,10 +758,10 @@ window.onload = function () {
 const today = new Date();
 const countDownTo = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
 
-var timer = setInterval(function()  {
+var timer = setInterval(function () {
     // Get today's date and time
     var now = new Date();
-    
+
     // Find the distance between now and the count down date
     var timeLeft = countDownTo - now;
 
