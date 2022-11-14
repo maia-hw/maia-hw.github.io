@@ -186,7 +186,8 @@ function isValidGuess(guess) {
 
 // select a new solution each day
 function todaysWordle(today) {
-    const start = new Date("2021-06-21") - 60000*today.getTimezoneOffset();
+    const start = new Date("2021-06-21") - 60000 * today.getTimezoneOffset();
+    console.log("time zone offset: " + today.getTimezoneOffset());
     const todaysIndex = Math.floor((today - start) / 86400000);
 
     return valid_solutions[todaysIndex];
@@ -717,8 +718,6 @@ window.onload = function () {
             if (iterations >= valid_solutions.length + 10) {
                 console.log("couldnt find solution: " + wordleInProgress.solution);
                 throw "infinite loop";
-
-                return;
             }
         }
 
@@ -741,8 +740,13 @@ window.onload = function () {
             currGuess = currGuess.next;
         }
     }
-    catch {
-        window.alert("Sorry, Inversle encountered a problem. Try again tomorrow.");
+    catch (err) {
+        if (err == "infinite loop") {
+            window.alert("Sorry, Inversle encountered a problem. Try again tomorrow.");
+        }
+        else {
+            window.alert("Sorry, Inversle encountered a problem. Please try a different browser. \nInversle is not currently supported by Firefox, or by older versions of some browsers.");
+        }
     }
 
     // display the help pop-up on load. focus will be set when user closes the pop-up
