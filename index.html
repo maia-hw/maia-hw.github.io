@@ -50,11 +50,40 @@
                     <button onClick="toggleHelpMenu()">X</button>
                 </div>
             </div>
-            <p>Guess the missing word in the wordle solution! Assume the wordle player is playing in hard mode - they always use all revealed hints.</p>
-            For example:
-            <div class="game-board"><div class="row"><div class="square wrong-spot">a</div><div class="square incorrect">b</div><div class="square incorrect">b</div><div class="square incorrect">e</div><div class="square incorrect">y</div></div><div class="row"><div class="square incorrect">p</div><div class="square wrong-spot">a</div><div class="square incorrect">n</div><div class="square incorrect">i</div><div class="square incorrect">c</div></div><div class="row"><div class="square incorrect"> </div><div class="square wrong-spot"> </div><div class="square wrong-spot"> </div><div class="square correct"> </div><div class="square incorrect"></div></div><div class="row"><div class="square wrong-spot">f</div><div class="square wrong-spot">l</div><div class="square wrong-spot">o</div><div class="square correct">a</div><div class="square incorrect">t</div></div><div class="row"><div class="square correct">o</div><div class="square correct">f</div><div class="square correct">f</div><div class="square correct">a</div><div class="square correct">l</div></div></div>
-            <p>The missing guess could be solar, or molar, but not polar because we already know that the word does not contain a P.</p>
+            <p> Use the colours to guess the hidden word in the <a href = "https://www.nytimes.com/games/wordle/index.html">Wordle</a> solution!
+                Assume the Wordle player is playing in hard mode - they always use all revealed hints. 
+                <br></br>
+                For example: 
+            </p>
+            <div class="game-board">
+                <div class="row">
+                    <div class="square incorrect">l</div><div class="square wrong-spot">a</div><div class="square incorrect">p</div><div class="square incorrect">s</div><div class="square correct">e</div>
+                </div>
+                <div class="row">
+                    <div class="square wrong-spot"> </div><div class="square incorrect"> </div><div class="square incorrect"> </div><div class="square correct"> </div><div class="square correct"></div>
+                </div>
+                <div class="row">
+                    <div class="square correct">i</div><div class="square correct">n</div><div class="square correct">a</div><div class="square correct">n</div><div class="square correct">e</div>
+                </div>
+            </div>
+            <p> The solution to the Wordle is "inane". 
+                The player guessed "lapse" and one other word before solving the Wordle. 
+                Our goal is to figure out what the hidden guess is.
+                <br></br>
+                We know:
+                <ul>
+                    <li>The green squares in the hidden guess match the solution: the hidden guess ends in "n" and "e".</li>
+                    <li>The white squares in the hidden guess do not contain letters that are in the solution. </li>
+                    <li>The yellow square in the hidden guess must be a letter that is in the solution, but in a different spot.</li>
+                    <li>The user does not repeat incorrect letters: the hidden guess will not contain "l", "p", or "s".</li>
+                    <li>The user includes all known letters in their future guesses: the hidden guess must contain an "a", but in a different spot.</li>
+                </ul>
+                This means the hidden guess must be "atone"!
+                <br></br>
+                Press the 'X' button in the top-right corner of this pop-up window to get started on today's Inversle! A new puzzle will be generated each day at midnight PST.
+            </p>
         </div>
+
         <!-- game board always shows up -->
         <div class="game-board" id="game-board"></div>
         <!-- toastr and jQuery needed for toastr-->

@@ -152,7 +152,7 @@ class Wordle {
 
 /* ***********************************************
  *                                               *
- *            Global Variables :/                *
+ *              Global Variables                 *
  *                                               *  
  * ***********************************************/
 
@@ -167,6 +167,7 @@ const inversle = {
     colours: ["incorrect", "incorrect", "incorrect", "incorrect", "incorrect"]
 };
 
+// pop-up notification settings
 toastr.options.closeButton = true;
 toastr.options.timeOut = 1500;
 
