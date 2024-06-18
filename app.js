@@ -280,8 +280,11 @@ function consolidateWordle(wordle) {
             // remove the next guess in a doubly linked list
             const toDelete = currGuess.next;
             toDelete.next.prev = currGuess;
-            currGuess.next = toDelete.next;
+            currGuess.next = toDelete.next; // it's all a refernce so this changes caller's wordle
             // how to free memory in javascript?
+
+            // caller's wordle just got shorter, keep track of this
+            wordle.length--
 
             // should probably update knowledge state here but oh well
 
