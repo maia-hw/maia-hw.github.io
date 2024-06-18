@@ -749,7 +749,8 @@ window.onload = function () {
             window.alert("Sorry, Inversle encountered a problem. Try again tomorrow.");
         }
         else {
-            window.alert("Sorry, Inversle encountered a problem. Please try a different browser. \nInversle is not currently supported by Firefox, or by older versions of some browsers.");
+            console.error(err, err.stack)
+            window.alert("Sorry, Inversle encountered a problem. Please try a different browser, or try again tomorrow."); 
         }
     }
 
